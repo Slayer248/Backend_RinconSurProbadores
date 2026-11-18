@@ -126,6 +126,7 @@ class UsuarioServiceTest {
 
         assertEquals(5L, res.id());
         assertEquals("ASISTENTE", res.rolNombre());
+        assertTrue(res.debeCambiarContrasena());
         verify(emailService).enviarCredenciales(eq("juan@rinconsur.cl"), eq("Juan Pérez"), eq("jperez"), anyString(), eq("ASISTENTE"));
     }
 
@@ -192,7 +193,7 @@ class UsuarioServiceTest {
 
     @Test
     void cambiarContrasena_ExitosoYErrores() {
-        Usuario u = Usuario.builder().id(2L).contrasena(encoder.encode("Actual123")).build();
+        Usuario u = Usuario.builder().id(2L).contrasena(encoder.encode("Actual123")).debeCambiarContrasena(true).build();
         when(usuarioRepository.findById(2L)).thenReturn(Optional.of(u));
 
         assertThrows(ResponseStatusException.class, () ->
@@ -201,9 +202,14 @@ class UsuarioServiceTest {
         assertThrows(ResponseStatusException.class, () ->
                 usuarioService.cambiarContrasena(2L, new CambiarContrasenaRequest("Actual123", "corta"))
         );
+        assertThrows(ResponseStatusException.class, () ->
+                usuarioService.cambiarContrasena(2L, new CambiarContrasenaRequest("Actual123", "Actual123"))
+        );
+        assertTrue(u.getDebeCambiarContrasena());
 
         usuarioService.cambiarContrasena(2L, new CambiarContrasenaRequest("Actual123", "NuevaPass123"));
         verify(usuarioRepository).save(u);
+        assertFalse(u.getDebeCambiarContrasena());
     }
 
     @Test
@@ -213,6 +219,7 @@ class UsuarioServiceTest {
 
         usuarioService.recuperarContrasena("jperez");
         verify(usuarioRepository).save(u);
+        assertTrue(u.getDebeCambiarContrasena());
         verify(emailService).enviarRecuperacionContrasena(eq("j@b.cl"), eq("Juan"), eq("jperez"), anyString());
 
         assertThrows(ResponseStatusException.class, () -> usuarioService.recuperarContrasena(" "));

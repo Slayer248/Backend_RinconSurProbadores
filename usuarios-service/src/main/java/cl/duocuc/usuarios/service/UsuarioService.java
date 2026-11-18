@@ -101,6 +101,7 @@ public class UsuarioService {
                 .contrasena(passwordEncoder.encode(contrasenaGenerada))
                 .rolId(rol.id())
                 .bloqueado(false)
+                .debeCambiarContrasena(true)
                 .build();
 
         Usuario guardado = usuarioRepository.save(nuevo);
@@ -164,7 +165,11 @@ public class UsuarioService {
         }
 
         validarContrasenaFuerte(datos.nueva());
+        if (passwordEncoder.matches(datos.nueva().trim(), usuario.getContrasena())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La nueva contraseña debe ser diferente a la actual");
+        }
         usuario.setContrasena(passwordEncoder.encode(datos.nueva().trim()));
+        usuario.setDebeCambiarContrasena(false);
         usuarioRepository.save(usuario);
     }
 
@@ -184,6 +189,7 @@ public class UsuarioService {
         // Generar nueva contraseña temporal
         String passTemporal = PasswordGenerator.generar(10);
         usuario.setContrasena(passwordEncoder.encode(passTemporal));
+        usuario.setDebeCambiarContrasena(true);
         usuarioRepository.save(usuario);
 
         try {

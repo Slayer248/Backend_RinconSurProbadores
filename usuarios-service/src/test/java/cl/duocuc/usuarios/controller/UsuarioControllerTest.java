@@ -22,7 +22,7 @@ class UsuarioControllerTest {
     @InjectMocks
     private UsuarioController usuarioController;
 
-    private final UsuarioResponse sample = new UsuarioResponse(1L, "admin", "Admin", "a@b.cl", 1L, "ADMIN", false);
+    private final UsuarioResponse sample = new UsuarioResponse(1L, "admin", "Admin", "a@b.cl", 1L, "ADMIN", false, false);
 
     @Test
     void todosLosEndpoints_DeleganCorrectamenteAlServicio() {

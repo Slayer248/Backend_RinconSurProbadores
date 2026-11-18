@@ -13,4 +13,6 @@ public interface TurnoRepository extends JpaRepository<Turno, Long> {
     Optional<Turno> findFirstByEstadoOrderByEsPreferenteDescIdAsc(String estado);
 
     boolean existsByNombreClienteIgnoreCaseAndEstado(String nombreCliente, String estado);
+
+    boolean existsByEstado(String estado);
 }

@@ -3,6 +3,7 @@ package cl.duocuc.probadores.service;
 import cl.duocuc.probadores.client.TurnoClient;
 import cl.duocuc.probadores.dto.BloqueoProbadorRequest;
 import cl.duocuc.probadores.dto.CrearProbadorRequest;
+import cl.duocuc.probadores.dto.TurnoAtendidoResponse;
 import cl.duocuc.probadores.model.Probador;
 import cl.duocuc.probadores.repository.ProbadorRepository;
 import lombok.RequiredArgsConstructor;
@@ -10,6 +11,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -19,6 +21,7 @@ import java.util.List;
 public class ProbadorService {
 
     private static final DateTimeFormatter HORA_FMT = DateTimeFormatter.ofPattern("HH:mm");
+    private static final DateTimeFormatter FECHA_HORA_FMT = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm");
 
     private final ProbadorRepository probadorRepository;
     private final TurnoClient turnoClient;
@@ -64,15 +67,26 @@ public class ProbadorService {
         }
 
         String estadoUpper = nuevoEstado.trim().toUpperCase();
-        probador.setEstado(estadoUpper);
 
         if ("OCUPADO".equals(estadoUpper)) {
+            // Evita consumir otro turno si dos asistentes ocupan el mismo probador a la vez
+            if ("OCUPADO".equalsIgnoreCase(probador.getEstado())) {
+                return probador;
+            }
+            TurnoAtendidoResponse turno = turnoClient.atenderSiguiente()
+                    .orElseThrow(() -> new ResponseStatusException(
+                            HttpStatus.CONFLICT,
+                            "No hay clientes en la fila de espera para ocupar el probador"
+                    ));
             probador.setDesdeHora(LocalTime.now().format(HORA_FMT));
-            turnoClient.atenderSiguienteSiExiste();
+            probador.setUltimoCliente(turno.nombreCliente());
+            probador.setUltimoTurno(turno.numeroTurno());
+            probador.setUltimoUso(LocalDateTime.now().format(FECHA_HORA_FMT));
         } else if ("LIBRE".equals(estadoUpper)) {
             probador.setDesdeHora("-");
         }
 
+        probador.setEstado(estadoUpper);
         return probadorRepository.save(probador);
     }
 

@@ -1,5 +1,6 @@
 package cl.duocuc.probadores.client;
 
+import cl.duocuc.probadores.dto.TurnoAtendidoResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
@@ -8,6 +9,8 @@ import org.springframework.web.reactive.function.client.WebClientRequestExceptio
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Mono;
+
+import java.util.Optional;
 
 @Component
 public class TurnoClient {
@@ -18,14 +21,15 @@ public class TurnoClient {
         this.webClient = WebClient.builder().baseUrl(turnosUrl).build();
     }
 
-    public void atenderSiguienteSiExiste() {
+    /** Atiende al siguiente cliente de la fila; vacío si no hay nadie esperando. */
+    public Optional<TurnoAtendidoResponse> atenderSiguiente() {
         try {
-            webClient.post()
+            return webClient.post()
                     .uri("/api/turnos/atender-siguiente")
                     .retrieve()
-                    .toBodilessEntity()
+                    .bodyToMono(TurnoAtendidoResponse.class)
                     .onErrorResume(WebClientResponseException.NotFound.class, e -> Mono.empty())
-                    .block();
+                    .blockOptional();
         } catch (WebClientRequestException e) {
             throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "El servicio de turnos no está disponible");
         }

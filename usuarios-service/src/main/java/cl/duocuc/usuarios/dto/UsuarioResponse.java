@@ -9,7 +9,8 @@ public record UsuarioResponse(
         String correo,
         Long rolId,
         String rolNombre,
-        Boolean bloqueado
+        Boolean bloqueado,
+        Boolean debeCambiarContrasena
 ) {
     public static UsuarioResponse desde(Usuario u, String rolNombre) {
         return new UsuarioResponse(
@@ -19,7 +20,8 @@ public record UsuarioResponse(
                 u.getCorreo(),
                 u.getRolId(),
                 rolNombre,
-                u.getBloqueado()
+                u.getBloqueado(),
+                Boolean.TRUE.equals(u.getDebeCambiarContrasena())
         );
     }
 }

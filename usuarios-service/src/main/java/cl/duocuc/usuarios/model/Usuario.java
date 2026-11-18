@@ -2,6 +2,7 @@ package cl.duocuc.usuarios.model;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.ColumnDefault;
 
 @Entity
 @Table(name = "usuarios")
@@ -34,4 +35,10 @@ public class Usuario {
     @Column(nullable = false)
     @Builder.Default
     private Boolean bloqueado = false;
+
+    /** Se activa con contraseñas temporales: cuenta nueva o recuperación de contraseña. */
+    @Column(name = "debe_cambiar_contrasena", nullable = false)
+    @ColumnDefault("0")
+    @Builder.Default
+    private Boolean debeCambiarContrasena = false;
 }

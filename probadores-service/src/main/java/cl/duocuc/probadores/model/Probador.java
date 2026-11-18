@@ -29,4 +29,13 @@ public class Probador {
 
     @Column(name = "motivo_fuera_servicio", length = 100)
     private String motivoFueraServicio;
+
+    @Column(name = "ultimo_cliente", length = 100)
+    private String ultimoCliente;
+
+    @Column(name = "ultimo_turno", length = 20)
+    private String ultimoTurno;
+
+    @Column(name = "ultimo_uso", length = 20)
+    private String ultimoUso;
 }

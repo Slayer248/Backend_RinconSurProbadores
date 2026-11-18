@@ -3,6 +3,7 @@ package cl.duocuc.probadores.service;
 import cl.duocuc.probadores.client.TurnoClient;
 import cl.duocuc.probadores.dto.BloqueoProbadorRequest;
 import cl.duocuc.probadores.dto.CrearProbadorRequest;
+import cl.duocuc.probadores.dto.TurnoAtendidoResponse;
 import cl.duocuc.probadores.model.Probador;
 import cl.duocuc.probadores.repository.ProbadorRepository;
 import org.junit.jupiter.api.Test;
@@ -111,16 +112,58 @@ class ProbadorServiceTest {
     }
 
     @Test
-    void cambiarEstado_AOcupado_AsignaHoraYLlamaTurnoClient() {
+    void cambiarEstado_AOcupado_AsignaHoraYRegistraUltimoCliente() {
         Probador p = Probador.builder().codigo("P-01").esAccesible(false).estado("LIBRE").desdeHora("-").build();
         when(probadorRepository.findById("P-01")).thenReturn(Optional.of(p));
+        when(turnoClient.atenderSiguiente()).thenReturn(Optional.of(new TurnoAtendidoResponse("T-1001", "Ana Morales")));
         when(probadorRepository.save(any(Probador.class))).thenAnswer(inv -> inv.getArgument(0));
 
         Probador resultado = probadorService.cambiarEstado("P-01", "ocupado");
 
         assertEquals("OCUPADO", resultado.getEstado());
         assertNotEquals("-", resultado.getDesdeHora());
-        verify(turnoClient).atenderSiguienteSiExiste();
+        assertEquals("Ana Morales", resultado.getUltimoCliente());
+        assertEquals("T-1001", resultado.getUltimoTurno());
+        assertNotNull(resultado.getUltimoUso());
+        verify(turnoClient).atenderSiguiente();
+    }
+
+    @Test
+    void cambiarEstado_AOcupadoSinClientesEnFila_LanzaConflictYNoGuarda() {
+        Probador p = Probador.builder().codigo("P-01").esAccesible(false).estado("LIBRE").desdeHora("-").build();
+        when(probadorRepository.findById("P-01")).thenReturn(Optional.of(p));
+        when(turnoClient.atenderSiguiente()).thenReturn(Optional.empty());
+
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class, () ->
+                probadorService.cambiarEstado("P-01", "OCUPADO")
+        );
+
+        assertEquals(HttpStatus.CONFLICT, ex.getStatusCode());
+        assertEquals("LIBRE", p.getEstado());
+        verify(probadorRepository, never()).save(any());
+    }
+
+    @Test
+    void cambiarEstado_YaOcupado_NoConsumeOtroTurno() {
+        Probador p = Probador.builder().codigo("P-01").esAccesible(false).estado("OCUPADO").desdeHora("14:30").build();
+        when(probadorRepository.findById("P-01")).thenReturn(Optional.of(p));
+
+        Probador resultado = probadorService.cambiarEstado("P-01", "OCUPADO");
+
+        assertEquals("14:30", resultado.getDesdeHora());
+        verify(turnoClient, never()).atenderSiguiente();
+    }
+
+    @Test
+    void cambiarEstado_ALibre_ConservaUltimoCliente() {
+        Probador p = Probador.builder().codigo("P-01").esAccesible(false).estado("LIMPIEZA")
+                .ultimoCliente("Ana Morales").ultimoTurno("T-1001").ultimoUso("18-11-2026 10:15").build();
+        when(probadorRepository.findById("P-01")).thenReturn(Optional.of(p));
+        when(probadorRepository.save(any(Probador.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        Probador resultado = probadorService.cambiarEstado("P-01", "LIBRE");
+
+        assertEquals("Ana Morales", resultado.getUltimoCliente());
     }
 
     @Test
@@ -133,7 +176,7 @@ class ProbadorServiceTest {
 
         assertEquals("LIBRE", resultado.getEstado());
         assertEquals("-", resultado.getDesdeHora());
-        verify(turnoClient, never()).atenderSiguienteSiExiste();
+        verify(turnoClient, never()).atenderSiguiente();
     }
 
     @Test
