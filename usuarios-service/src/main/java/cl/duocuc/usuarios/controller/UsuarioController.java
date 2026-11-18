@@ -55,6 +55,12 @@ public class UsuarioController {
         usuarioService.cambiarContrasena(id, datos);
     }
 
+    @PostMapping("/recuperar")
+    @ResponseStatus(HttpStatus.OK)
+    public void recuperarContrasena(@RequestBody RecuperarContrasenaRequest datos) {
+        usuarioService.recuperarContrasena(datos.username());
+    }
+
     @PatchMapping("/{id}/bloqueo")
     public UsuarioResponse cambiarBloqueo(
             @PathVariable Long id,

@@ -30,6 +30,9 @@ class UsuarioServiceTest {
     @Mock
     private RolClient rolClient;
 
+    @Mock
+    private EmailService emailService;
+
     @InjectMocks
     private UsuarioService usuarioService;
 
@@ -64,12 +67,67 @@ class UsuarioServiceTest {
     }
 
     @Test
-    void crearUsuario_ContrasenaDebilLanzaBadRequest() {
+    void crearUsuario_CamposInvalidosLanzaBadRequest() {
         RegistroUsuarioRequest req = new RegistroUsuarioRequest(
-                "nuevo", "Nuevo Usuario", "nuevo@rinconsur.cl", "1234", 2L
+                "ab", "Nuevo", "nuevo@rinconsur.cl", null, 2L
         );
 
         assertThrows(ResponseStatusException.class, () -> usuarioService.crear(req));
         verify(usuarioRepository, never()).save(any());
+        verify(emailService, never()).enviarCredenciales(any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void crearUsuario_ExitoGeneraContrasenaYEnviaCorreo() {
+        RegistroUsuarioRequest req = new RegistroUsuarioRequest(
+                "nuevo", "Nuevo Usuario", "nuevo@rinconsur.cl", null, 2L
+        );
+
+        when(usuarioRepository.existsByUsernameIgnoreCase("nuevo")).thenReturn(false);
+        when(usuarioRepository.existsByCorreoIgnoreCase("nuevo@rinconsur.cl")).thenReturn(false);
+        when(rolClient.obtenerPorId(2L)).thenReturn(new RolDto(2L, "ASISTENTE"));
+        when(usuarioRepository.save(any(Usuario.class))).thenAnswer(inv -> {
+            Usuario u = inv.getArgument(0);
+            return Usuario.builder()
+                    .id(10L)
+                    .username(u.getUsername())
+                    .nombre(u.getNombre())
+                    .correo(u.getCorreo())
+                    .contrasena(u.getContrasena())
+                    .rolId(u.getRolId())
+                    .bloqueado(u.getBloqueado())
+                    .build();
+        });
+
+        UsuarioResponse res = usuarioService.crear(req);
+
+        assertNotNull(res);
+        assertEquals("nuevo", res.username());
+        assertEquals("ASISTENTE", res.rolNombre());
+        verify(usuarioRepository).save(any(Usuario.class));
+        verify(emailService).enviarCredenciales(eq("nuevo@rinconsur.cl"), eq("Nuevo Usuario"), eq("nuevo"), anyString(), eq("ASISTENTE"));
+    }
+
+    @Test
+    void recuperarContrasena_ExitoGeneraClaveYEnviaCorreo() {
+        Usuario user = Usuario.builder()
+                .id(5L).username("juan").nombre("Juan").correo("juan@rinconsur.cl")
+                .contrasena(encoder.encode("ViejaClave1")).rolId(2L).bloqueado(false).build();
+
+        when(usuarioRepository.findByUsernameIgnoreCase("juan")).thenReturn(Optional.of(user));
+
+        usuarioService.recuperarContrasena("juan");
+
+        verify(usuarioRepository).save(user);
+        verify(emailService).enviarRecuperacionContrasena(eq("juan@rinconsur.cl"), eq("Juan"), eq("juan"), anyString());
+    }
+
+    @Test
+    void recuperarContrasena_UsuarioNoExisteLanzaNotFound() {
+        when(usuarioRepository.findByUsernameIgnoreCase("fantasma")).thenReturn(Optional.empty());
+
+        assertThrows(ResponseStatusException.class, () -> usuarioService.recuperarContrasena("fantasma"));
+        verify(usuarioRepository, never()).save(any());
+        verify(emailService, never()).enviarRecuperacionContrasena(any(), any(), any(), any());
     }
 }

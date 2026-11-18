@@ -4,10 +4,13 @@ import cl.duocuc.usuarios.client.RolClient;
 import cl.duocuc.usuarios.dto.*;
 import cl.duocuc.usuarios.model.Usuario;
 import cl.duocuc.usuarios.repository.UsuarioRepository;
+import cl.duocuc.usuarios.util.PasswordGenerator;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
@@ -15,10 +18,12 @@ import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class UsuarioService {
 
     private final UsuarioRepository usuarioRepository;
     private final RolClient rolClient;
+    private final EmailService emailService;
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
     public UsuarioResponse login(LoginRequest datos) {
@@ -70,9 +75,9 @@ public class UsuarioService {
         return UsuarioResponse.desde(u, rol.nombre());
     }
 
+    @Transactional
     public UsuarioResponse crear(RegistroUsuarioRequest datos) {
         validarCamposBase(datos.username(), datos.nombre(), datos.correo(), datos.rolId());
-        validarContrasenaFuerte(datos.contrasena());
 
         String userClean = datos.username().trim();
         String mailClean = datos.correo().trim();
@@ -86,16 +91,31 @@ public class UsuarioService {
 
         RolDto rol = rolClient.obtenerPorId(datos.rolId());
 
+        // Generar contraseña aleatoria y segura para el nuevo usuario
+        String contrasenaGenerada = PasswordGenerator.generar(10);
+
         Usuario nuevo = Usuario.builder()
                 .username(userClean)
                 .nombre(datos.nombre().trim())
                 .correo(mailClean)
-                .contrasena(passwordEncoder.encode(datos.contrasena().trim()))
+                .contrasena(passwordEncoder.encode(contrasenaGenerada))
                 .rolId(rol.id())
                 .bloqueado(false)
                 .build();
 
-        return UsuarioResponse.desde(usuarioRepository.save(nuevo), rol.nombre());
+        Usuario guardado = usuarioRepository.save(nuevo);
+
+        try {
+            emailService.enviarCredenciales(mailClean, guardado.getNombre(), userClean, contrasenaGenerada, rol.nombre());
+        } catch (Exception e) {
+            log.error("Error al enviar el correo con las credenciales a {}: {}", mailClean, e.getMessage(), e);
+            throw new ResponseStatusException(
+                    HttpStatus.INTERNAL_SERVER_ERROR,
+                    "No se pudo enviar el correo con las credenciales: " + e.getMessage()
+            );
+        }
+
+        return UsuarioResponse.desde(guardado, rol.nombre());
     }
 
     public UsuarioResponse actualizar(Long id, ActualizarUsuarioRequest datos) {
@@ -146,6 +166,40 @@ public class UsuarioService {
         validarContrasenaFuerte(datos.nueva());
         usuario.setContrasena(passwordEncoder.encode(datos.nueva().trim()));
         usuarioRepository.save(usuario);
+    }
+
+    @Transactional
+    public void recuperarContrasena(String username) {
+        if (username == null || username.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El nombre de usuario es obligatorio");
+        }
+
+        Usuario usuario = usuarioRepository.findByUsernameIgnoreCase(username.trim())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "No existe ningún usuario registrado con el username '" + username.trim() + "'"));
+
+        if (Boolean.TRUE.equals(usuario.getBloqueado())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Tu cuenta se encuentra bloqueada. Contacta al administrador.");
+        }
+
+        // Generar nueva contraseña temporal
+        String passTemporal = PasswordGenerator.generar(10);
+        usuario.setContrasena(passwordEncoder.encode(passTemporal));
+        usuarioRepository.save(usuario);
+
+        try {
+            emailService.enviarRecuperacionContrasena(
+                    usuario.getCorreo(),
+                    usuario.getNombre(),
+                    usuario.getUsername(),
+                    passTemporal
+            );
+        } catch (Exception e) {
+            log.error("Error al enviar correo de recuperación a {}: {}", usuario.getCorreo(), e.getMessage(), e);
+            throw new ResponseStatusException(
+                    HttpStatus.INTERNAL_SERVER_ERROR,
+                    "No se pudo enviar el correo de recuperación: " + e.getMessage()
+            );
+        }
     }
 
     public UsuarioResponse cambiarBloqueo(Long id, Boolean bloqueado, Long adminId) {
