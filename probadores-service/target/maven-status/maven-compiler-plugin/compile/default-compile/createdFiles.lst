@@ -1,0 +1,12 @@
+cl\duocuc\probadores\config\OpenApiConfig.class
+cl\duocuc\probadores\controller\ProbadorController.class
+cl\duocuc\probadores\repository\ProbadorRepository.class
+cl\duocuc\probadores\model\Probador$ProbadorBuilder.class
+cl\duocuc\probadores\dto\BloqueoProbadorRequest.class
+cl\duocuc\probadores\service\ProbadorService.class
+cl\duocuc\probadores\dto\CrearProbadorRequest.class
+cl\duocuc\probadores\config\DatosIniciales.class
+cl\duocuc\probadores\ProbadoresServiceApplication.class
+cl\duocuc\probadores\client\TurnoClient.class
+cl\duocuc\probadores\dto\CambiarEstadoProbadorRequest.class
+cl\duocuc\probadores\model\Probador.class

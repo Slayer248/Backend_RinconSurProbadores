@@ -1,0 +1,4 @@
+cl\duocuc\roles\service\RolServiceTest.class
+cl\duocuc\roles\controller\RolControllerTest.class
+cl\duocuc\roles\config\DatosInicialesTest.class
+cl\duocuc\roles\RolesServiceApplicationTests.class

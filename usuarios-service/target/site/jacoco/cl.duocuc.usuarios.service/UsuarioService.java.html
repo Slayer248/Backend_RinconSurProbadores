@@ -1,0 +1,261 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>UsuarioService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">usuarios-service</a> &gt; <a href="index.source.html" class="el_package">cl.duocuc.usuarios.service</a> &gt; <span class="el_source">UsuarioService.java</span></div><h1>UsuarioService.java</h1><pre class="source lang-java linenums">package cl.duocuc.usuarios.service;
+
+import cl.duocuc.usuarios.client.RolClient;
+import cl.duocuc.usuarios.dto.*;
+import cl.duocuc.usuarios.model.Usuario;
+import cl.duocuc.usuarios.repository.UsuarioRepository;
+import cl.duocuc.usuarios.util.PasswordGenerator;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
+
+import java.util.List;
+import java.util.Map;
+
+@Service
+@RequiredArgsConstructor
+<span class="fc" id="L21">@Slf4j</span>
+public class UsuarioService {
+
+    private final UsuarioRepository usuarioRepository;
+    private final RolClient rolClient;
+    private final EmailService emailService;
+    private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+
+    public UsuarioResponse login(LoginRequest datos) {
+<span class="pc bpc" id="L30" title="1 of 4 branches missed.">        if (datos.username() == null || datos.username().isBlank() ||</span>
+<span class="pc bpc" id="L31" title="1 of 4 branches missed.">            datos.contrasena() == null || datos.contrasena().isBlank()) {</span>
+<span class="fc" id="L32">            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, &quot;Usuario y contraseña obligatorios&quot;);</span>
+        }
+
+<span class="fc" id="L35">        Usuario usuario = usuarioRepository.findByUsernameIgnoreCase(datos.username().trim())</span>
+<span class="fc" id="L36">                .orElseThrow(() -&gt; new ResponseStatusException(HttpStatus.UNAUTHORIZED, &quot;Usuario o contraseña incorrectos&quot;));</span>
+
+<span class="fc bfc" id="L38" title="All 2 branches covered.">        if (!passwordEncoder.matches(datos.contrasena().trim(), usuario.getContrasena())) {</span>
+<span class="fc" id="L39">            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, &quot;Usuario o contraseña incorrectos&quot;);</span>
+        }
+
+<span class="fc bfc" id="L42" title="All 2 branches covered.">        if (Boolean.TRUE.equals(usuario.getBloqueado())) {</span>
+<span class="fc" id="L43">            throw new ResponseStatusException(HttpStatus.FORBIDDEN, &quot;Tu cuenta se encuentra bloqueada. Contacta al administrador.&quot;);</span>
+        }
+
+<span class="fc" id="L46">        RolDto rol = rolClient.obtenerPorId(usuario.getRolId());</span>
+<span class="fc" id="L47">        return UsuarioResponse.desde(usuario, rol.nombre());</span>
+    }
+
+    public List&lt;UsuarioResponse&gt; listar(String buscar, Long rolId) {
+<span class="fc" id="L51">        Map&lt;Long, String&gt; mapaRoles = rolClient.obtenerMapaRoles();</span>
+<span class="fc bfc" id="L52" title="All 2 branches covered.">        String filtro = buscar != null ? buscar.trim().toLowerCase() : &quot;&quot;;</span>
+
+<span class="fc" id="L54">        return usuarioRepository.findAllByOrderByIdAsc().stream()</span>
+<span class="fc bfc" id="L55" title="All 4 branches covered.">                .filter(u -&gt; rolId == null || u.getRolId().equals(rolId))</span>
+<span class="fc bfc" id="L56" title="All 2 branches covered.">                .filter(u -&gt; filtro.isEmpty()</span>
+<span class="pc bpc" id="L57" title="1 of 2 branches missed.">                        || u.getUsername().toLowerCase().contains(filtro)</span>
+<span class="pc bpc" id="L58" title="1 of 2 branches missed.">                        || u.getNombre().toLowerCase().contains(filtro)</span>
+<span class="pc bnc" id="L59" title="All 2 branches missed.">                        || u.getCorreo().toLowerCase().contains(filtro))</span>
+<span class="fc" id="L60">                .map(u -&gt; UsuarioResponse.desde(u, mapaRoles.getOrDefault(u.getRolId(), &quot;DESCONOCIDO&quot;)))</span>
+<span class="fc" id="L61">                .toList();</span>
+    }
+
+    public UsuarioResponse obtenerPorId(Long id) {
+<span class="fc" id="L65">        Usuario u = usuarioRepository.findById(id)</span>
+<span class="fc" id="L66">                .orElseThrow(() -&gt; new ResponseStatusException(HttpStatus.NOT_FOUND, &quot;Usuario no encontrado&quot;));</span>
+<span class="fc" id="L67">        RolDto rol = rolClient.obtenerPorId(u.getRolId());</span>
+<span class="fc" id="L68">        return UsuarioResponse.desde(u, rol.nombre());</span>
+    }
+
+    public UsuarioResponse obtenerPorUsername(String username) {
+<span class="fc" id="L72">        Usuario u = usuarioRepository.findByUsernameIgnoreCase(username.trim())</span>
+<span class="pc" id="L73">                .orElseThrow(() -&gt; new ResponseStatusException(HttpStatus.NOT_FOUND, &quot;Usuario no encontrado&quot;));</span>
+<span class="fc" id="L74">        RolDto rol = rolClient.obtenerPorId(u.getRolId());</span>
+<span class="fc" id="L75">        return UsuarioResponse.desde(u, rol.nombre());</span>
+    }
+
+    @Transactional
+    public UsuarioResponse crear(RegistroUsuarioRequest datos) {
+<span class="fc" id="L80">        validarCamposBase(datos.username(), datos.nombre(), datos.correo(), datos.rolId());</span>
+
+<span class="fc" id="L82">        String userClean = datos.username().trim();</span>
+<span class="fc" id="L83">        String mailClean = datos.correo().trim();</span>
+
+<span class="fc bfc" id="L85" title="All 2 branches covered.">        if (usuarioRepository.existsByUsernameIgnoreCase(userClean)) {</span>
+<span class="fc" id="L86">            throw new ResponseStatusException(HttpStatus.CONFLICT, &quot;El usuario '&quot; + userClean + &quot;' ya existe&quot;);</span>
+        }
+<span class="fc bfc" id="L88" title="All 2 branches covered.">        if (usuarioRepository.existsByCorreoIgnoreCase(mailClean)) {</span>
+<span class="fc" id="L89">            throw new ResponseStatusException(HttpStatus.CONFLICT, &quot;El correo '&quot; + mailClean + &quot;' ya está registrado&quot;);</span>
+        }
+
+<span class="fc" id="L92">        RolDto rol = rolClient.obtenerPorId(datos.rolId());</span>
+
+        // Generar contraseña aleatoria y segura para el nuevo usuario
+<span class="fc" id="L95">        String contrasenaGenerada = PasswordGenerator.generar(10);</span>
+
+<span class="fc" id="L97">        Usuario nuevo = Usuario.builder()</span>
+<span class="fc" id="L98">                .username(userClean)</span>
+<span class="fc" id="L99">                .nombre(datos.nombre().trim())</span>
+<span class="fc" id="L100">                .correo(mailClean)</span>
+<span class="fc" id="L101">                .contrasena(passwordEncoder.encode(contrasenaGenerada))</span>
+<span class="fc" id="L102">                .rolId(rol.id())</span>
+<span class="fc" id="L103">                .bloqueado(false)</span>
+<span class="fc" id="L104">                .build();</span>
+
+<span class="fc" id="L106">        Usuario guardado = usuarioRepository.save(nuevo);</span>
+
+        try {
+<span class="fc" id="L109">            emailService.enviarCredenciales(mailClean, guardado.getNombre(), userClean, contrasenaGenerada, rol.nombre());</span>
+<span class="fc" id="L110">        } catch (Exception e) {</span>
+<span class="fc" id="L111">            log.error(&quot;Error al enviar el correo con las credenciales a {}: {}&quot;, mailClean, e.getMessage(), e);</span>
+<span class="fc" id="L112">            throw new ResponseStatusException(</span>
+                    HttpStatus.INTERNAL_SERVER_ERROR,
+<span class="fc" id="L114">                    &quot;No se pudo enviar el correo con las credenciales: &quot; + e.getMessage()</span>
+            );
+<span class="fc" id="L116">        }</span>
+
+<span class="fc" id="L118">        return UsuarioResponse.desde(guardado, rol.nombre());</span>
+    }
+
+    public UsuarioResponse actualizar(Long id, ActualizarUsuarioRequest datos) {
+<span class="fc" id="L122">        Usuario existente = usuarioRepository.findById(id)</span>
+<span class="pc" id="L123">                .orElseThrow(() -&gt; new ResponseStatusException(HttpStatus.NOT_FOUND, &quot;Usuario no encontrado&quot;));</span>
+
+<span class="fc" id="L125">        validarCamposBase(datos.username(), datos.nombre(), datos.correo(), datos.rolId());</span>
+
+<span class="fc" id="L127">        String userClean = datos.username().trim();</span>
+<span class="fc" id="L128">        String mailClean = datos.correo().trim();</span>
+
+<span class="fc bfc" id="L130" title="All 4 branches covered.">        if (&quot;admin&quot;.equalsIgnoreCase(existente.getUsername()) &amp;&amp; !&quot;admin&quot;.equalsIgnoreCase(userClean)) {</span>
+<span class="fc" id="L131">            throw new ResponseStatusException(HttpStatus.FORBIDDEN, &quot;No se puede cambiar el username del administrador principal&quot;);</span>
+        }
+<span class="pc bpc" id="L133" title="1 of 2 branches missed.">        if (usuarioRepository.existsByUsernameIgnoreCaseAndIdNot(userClean, id)) {</span>
+<span class="nc" id="L134">            throw new ResponseStatusException(HttpStatus.CONFLICT, &quot;El usuario '&quot; + userClean + &quot;' ya está en uso&quot;);</span>
+        }
+<span class="pc bpc" id="L136" title="1 of 2 branches missed.">        if (usuarioRepository.existsByCorreoIgnoreCaseAndIdNot(mailClean, id)) {</span>
+<span class="nc" id="L137">            throw new ResponseStatusException(HttpStatus.CONFLICT, &quot;El correo '&quot; + mailClean + &quot;' ya está en uso&quot;);</span>
+        }
+
+<span class="fc" id="L140">        RolDto rol = rolClient.obtenerPorId(datos.rolId());</span>
+<span class="pc bpc" id="L141" title="1 of 4 branches missed.">        if (&quot;admin&quot;.equalsIgnoreCase(existente.getUsername()) &amp;&amp; !&quot;ADMIN&quot;.equalsIgnoreCase(rol.nombre())) {</span>
+<span class="fc" id="L142">            throw new ResponseStatusException(HttpStatus.FORBIDDEN, &quot;No se puede quitar el rol ADMIN al administrador principal&quot;);</span>
+        }
+
+<span class="fc" id="L145">        existente.setUsername(userClean);</span>
+<span class="fc" id="L146">        existente.setNombre(datos.nombre().trim());</span>
+<span class="fc" id="L147">        existente.setCorreo(mailClean);</span>
+<span class="fc" id="L148">        existente.setRolId(rol.id());</span>
+
+<span class="pc bpc" id="L150" title="2 of 4 branches missed.">        if (datos.nuevaContrasena() != null &amp;&amp; !datos.nuevaContrasena().isBlank()) {</span>
+<span class="fc" id="L151">            validarContrasenaFuerte(datos.nuevaContrasena());</span>
+<span class="fc" id="L152">            existente.setContrasena(passwordEncoder.encode(datos.nuevaContrasena().trim()));</span>
+        }
+
+<span class="fc" id="L155">        return UsuarioResponse.desde(usuarioRepository.save(existente), rol.nombre());</span>
+    }
+
+    public void cambiarContrasena(Long id, CambiarContrasenaRequest datos) {
+<span class="fc" id="L159">        Usuario usuario = usuarioRepository.findById(id)</span>
+<span class="pc" id="L160">                .orElseThrow(() -&gt; new ResponseStatusException(HttpStatus.NOT_FOUND, &quot;Usuario no encontrado&quot;));</span>
+
+<span class="pc bpc" id="L162" title="1 of 4 branches missed.">        if (datos.actual() == null || !passwordEncoder.matches(datos.actual().trim(), usuario.getContrasena())) {</span>
+<span class="fc" id="L163">            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, &quot;La contraseña actual es incorrecta&quot;);</span>
+        }
+
+<span class="fc" id="L166">        validarContrasenaFuerte(datos.nueva());</span>
+<span class="fc" id="L167">        usuario.setContrasena(passwordEncoder.encode(datos.nueva().trim()));</span>
+<span class="fc" id="L168">        usuarioRepository.save(usuario);</span>
+<span class="fc" id="L169">    }</span>
+
+    @Transactional
+    public void recuperarContrasena(String username) {
+<span class="pc bpc" id="L173" title="1 of 4 branches missed.">        if (username == null || username.isBlank()) {</span>
+<span class="fc" id="L174">            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, &quot;El nombre de usuario es obligatorio&quot;);</span>
+        }
+
+<span class="fc" id="L177">        Usuario usuario = usuarioRepository.findByUsernameIgnoreCase(username.trim())</span>
+<span class="pc" id="L178">                .orElseThrow(() -&gt; new ResponseStatusException(HttpStatus.NOT_FOUND, &quot;No existe ningún usuario registrado con el username '&quot; + username.trim() + &quot;'&quot;));</span>
+
+<span class="fc bfc" id="L180" title="All 2 branches covered.">        if (Boolean.TRUE.equals(usuario.getBloqueado())) {</span>
+<span class="fc" id="L181">            throw new ResponseStatusException(HttpStatus.FORBIDDEN, &quot;Tu cuenta se encuentra bloqueada. Contacta al administrador.&quot;);</span>
+        }
+
+        // Generar nueva contraseña temporal
+<span class="fc" id="L185">        String passTemporal = PasswordGenerator.generar(10);</span>
+<span class="fc" id="L186">        usuario.setContrasena(passwordEncoder.encode(passTemporal));</span>
+<span class="fc" id="L187">        usuarioRepository.save(usuario);</span>
+
+        try {
+<span class="fc" id="L190">            emailService.enviarRecuperacionContrasena(</span>
+<span class="fc" id="L191">                    usuario.getCorreo(),</span>
+<span class="fc" id="L192">                    usuario.getNombre(),</span>
+<span class="fc" id="L193">                    usuario.getUsername(),</span>
+                    passTemporal
+            );
+<span class="nc" id="L196">        } catch (Exception e) {</span>
+<span class="nc" id="L197">            log.error(&quot;Error al enviar correo de recuperación a {}: {}&quot;, usuario.getCorreo(), e.getMessage(), e);</span>
+<span class="nc" id="L198">            throw new ResponseStatusException(</span>
+                    HttpStatus.INTERNAL_SERVER_ERROR,
+<span class="nc" id="L200">                    &quot;No se pudo enviar el correo de recuperación: &quot; + e.getMessage()</span>
+            );
+<span class="fc" id="L202">        }</span>
+<span class="fc" id="L203">    }</span>
+
+    public UsuarioResponse cambiarBloqueo(Long id, Boolean bloqueado, Long adminId) {
+<span class="fc" id="L206">        Usuario usuario = usuarioRepository.findById(id)</span>
+<span class="pc" id="L207">                .orElseThrow(() -&gt; new ResponseStatusException(HttpStatus.NOT_FOUND, &quot;Usuario no encontrado&quot;));</span>
+
+<span class="fc bfc" id="L209" title="All 2 branches covered.">        if (&quot;admin&quot;.equalsIgnoreCase(usuario.getUsername())) {</span>
+<span class="fc" id="L210">            throw new ResponseStatusException(HttpStatus.FORBIDDEN, &quot;No se puede bloquear al administrador principal&quot;);</span>
+        }
+<span class="pc bpc" id="L212" title="1 of 4 branches missed.">        if (adminId != null &amp;&amp; adminId.equals(id)) {</span>
+<span class="fc" id="L213">            throw new ResponseStatusException(HttpStatus.FORBIDDEN, &quot;No puedes bloquear tu propia cuenta&quot;);</span>
+        }
+
+<span class="fc" id="L216">        usuario.setBloqueado(Boolean.TRUE.equals(bloqueado));</span>
+<span class="fc" id="L217">        RolDto rol = rolClient.obtenerPorId(usuario.getRolId());</span>
+<span class="fc" id="L218">        return UsuarioResponse.desde(usuarioRepository.save(usuario), rol.nombre());</span>
+    }
+
+    public void eliminar(Long id, Long adminId) {
+<span class="fc" id="L222">        Usuario usuario = usuarioRepository.findById(id)</span>
+<span class="pc" id="L223">                .orElseThrow(() -&gt; new ResponseStatusException(HttpStatus.NOT_FOUND, &quot;Usuario no encontrado&quot;));</span>
+
+<span class="fc bfc" id="L225" title="All 2 branches covered.">        if (&quot;admin&quot;.equalsIgnoreCase(usuario.getUsername())) {</span>
+<span class="fc" id="L226">            throw new ResponseStatusException(HttpStatus.FORBIDDEN, &quot;No se puede eliminar al administrador principal&quot;);</span>
+        }
+<span class="pc bpc" id="L228" title="1 of 4 branches missed.">        if (adminId != null &amp;&amp; adminId.equals(id)) {</span>
+<span class="fc" id="L229">            throw new ResponseStatusException(HttpStatus.FORBIDDEN, &quot;No puedes eliminar tu propia cuenta&quot;);</span>
+        }
+
+<span class="fc" id="L232">        usuarioRepository.delete(usuario);</span>
+<span class="fc" id="L233">    }</span>
+
+    private void validarCamposBase(String username, String nombre, String correo, Long rolId) {
+<span class="pc bpc" id="L236" title="1 of 4 branches missed.">        if (username == null || username.trim().length() &lt; 3) {</span>
+<span class="fc" id="L237">            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, &quot;El usuario debe tener al menos 3 caracteres&quot;);</span>
+        }
+<span class="pc bpc" id="L239" title="1 of 4 branches missed.">        if (nombre == null || nombre.trim().length() &lt; 3) {</span>
+<span class="fc" id="L240">            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, &quot;El nombre debe tener al menos 3 caracteres&quot;);</span>
+        }
+<span class="pc bpc" id="L242" title="1 of 4 branches missed.">        if (correo == null || !correo.trim().matches(&quot;^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$&quot;)) {</span>
+<span class="fc" id="L243">            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, &quot;Ingresa un correo válido&quot;);</span>
+        }
+<span class="fc bfc" id="L245" title="All 2 branches covered.">        if (rolId == null) {</span>
+<span class="fc" id="L246">            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, &quot;El rol es obligatorio&quot;);</span>
+        }
+<span class="fc" id="L248">    }</span>
+
+    private void validarContrasenaFuerte(String pass) {
+<span class="pc bpc" id="L251" title="1 of 4 branches missed.">        if (pass == null || pass.trim().length() &lt; 8</span>
+<span class="pc bpc" id="L252" title="1 of 2 branches missed.">                || !pass.matches(&quot;.*[A-Za-z].*&quot;)</span>
+<span class="pc bpc" id="L253" title="1 of 2 branches missed.">                || !pass.matches(&quot;.*\\d.*&quot;)) {</span>
+<span class="fc" id="L254">            throw new ResponseStatusException(</span>
+                    HttpStatus.BAD_REQUEST,
+                    &quot;La contraseña debe tener al menos 8 caracteres, una letra y un número&quot;
+            );
+        }
+<span class="fc" id="L259">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

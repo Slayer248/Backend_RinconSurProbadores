@@ -1,0 +1,9 @@
+cl\duocuc\turnos\controller\TurnoController.class
+cl\duocuc\turnos\repository\TurnoRepository.class
+cl\duocuc\turnos\dto\CambiarEstadoTurnoRequest.class
+cl\duocuc\turnos\model\Turno.class
+cl\duocuc\turnos\TurnosServiceApplication.class
+cl\duocuc\turnos\service\TurnoService.class
+cl\duocuc\turnos\config\OpenApiConfig.class
+cl\duocuc\turnos\dto\CrearTurnoRequest.class
+cl\duocuc\turnos\model\Turno$TurnoBuilder.class

@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ProbadorController.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">probadores-service</a> &gt; <a href="index.source.html" class="el_package">cl.duocuc.probadores.controller</a> &gt; <span class="el_source">ProbadorController.java</span></div><h1>ProbadorController.java</h1><pre class="source lang-java linenums">package cl.duocuc.probadores.controller;
+
+import cl.duocuc.probadores.dto.BloqueoProbadorRequest;
+import cl.duocuc.probadores.dto.CambiarEstadoProbadorRequest;
+import cl.duocuc.probadores.dto.CrearProbadorRequest;
+import cl.duocuc.probadores.model.Probador;
+import cl.duocuc.probadores.service.ProbadorService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping(&quot;/api/probadores&quot;)
+@RequiredArgsConstructor
+@Tag(name = &quot;Probadores&quot;, description = &quot;Endpoints para la gestión, disponibilidad y bloqueo de probadores&quot;)
+public class ProbadorController {
+
+    private final ProbadorService probadorService;
+
+    @Operation(summary = &quot;Listar probadores&quot;, description = &quot;Obtiene todos los probadores registrados, permitiendo filtrar opcionalmente por su estado.&quot;)
+    @ApiResponse(responseCode = &quot;200&quot;, description = &quot;Listado de probadores obtenido correctamente&quot;)
+    @GetMapping
+    public List&lt;Probador&gt; listar(
+            @Parameter(description = &quot;Estado del probador para filtrar (ej. DISPONIBLE, OCUPADO)&quot;) @RequestParam(required = false) String estado
+    ) {
+<span class="fc" id="L33">        return probadorService.listar(estado);</span>
+    }
+
+    @Operation(summary = &quot;Obtener probador por código&quot;, description = &quot;Busca y retorna un probador específico mediante su código único.&quot;)
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = &quot;200&quot;, description = &quot;Probador encontrado&quot;),
+            @ApiResponse(responseCode = &quot;404&quot;, description = &quot;Probador no encontrado&quot;)
+    })
+    @GetMapping(&quot;/{codigo}&quot;)
+    public Probador obtener(@Parameter(description = &quot;Código único del probador&quot;) @PathVariable String codigo) {
+<span class="fc" id="L43">        return probadorService.obtener(codigo);</span>
+    }
+
+    @Operation(summary = &quot;Crear nuevo probador&quot;, description = &quot;Registra un nuevo probador en el sistema.&quot;)
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = &quot;201&quot;, description = &quot;Probador creado exitosamente&quot;),
+            @ApiResponse(responseCode = &quot;400&quot;, description = &quot;Datos inválidos o código de probador duplicado&quot;)
+    })
+    @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
+    public Probador crear(@RequestBody CrearProbadorRequest datos) {
+<span class="fc" id="L54">        return probadorService.crear(datos);</span>
+    }
+
+    @Operation(summary = &quot;Cambiar estado del probador&quot;, description = &quot;Actualiza el estado operativo de un probador (ej. disponible u ocupado).&quot;)
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = &quot;200&quot;, description = &quot;Estado actualizado exitosamente&quot;),
+            @ApiResponse(responseCode = &quot;400&quot;, description = &quot;Estado inválido o transición no permitida&quot;),
+            @ApiResponse(responseCode = &quot;404&quot;, description = &quot;Probador no encontrado&quot;)
+    })
+    @PutMapping(&quot;/{codigo}/estado&quot;)
+    public Probador cambiarEstado(
+            @Parameter(description = &quot;Código único del probador&quot;) @PathVariable String codigo,
+            @RequestBody CambiarEstadoProbadorRequest datos
+    ) {
+<span class="fc" id="L68">        return probadorService.cambiarEstado(codigo, datos.estado());</span>
+    }
+
+    @Operation(summary = &quot;Bloquear o desbloquear probador&quot;, description = &quot;Habilita o deshabilita un probador por mantención o indisponibilidad.&quot;)
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = &quot;200&quot;, description = &quot;Bloqueo del probador actualizado&quot;),
+            @ApiResponse(responseCode = &quot;404&quot;, description = &quot;Probador no encontrado&quot;)
+    })
+    @PatchMapping(&quot;/{codigo}/bloqueo&quot;)
+    public Probador cambiarBloqueo(
+            @Parameter(description = &quot;Código único del probador&quot;) @PathVariable String codigo,
+            @RequestBody BloqueoProbadorRequest datos
+    ) {
+<span class="fc" id="L81">        return probadorService.cambiarBloqueo(codigo, datos);</span>
+    }
+
+    @Operation(summary = &quot;Eliminar probador&quot;, description = &quot;Elimina permanentemente un probador del sistema.&quot;)
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = &quot;204&quot;, description = &quot;Probador eliminado correctamente&quot;),
+            @ApiResponse(responseCode = &quot;404&quot;, description = &quot;Probador no encontrado&quot;)
+    })
+    @DeleteMapping(&quot;/{codigo}&quot;)
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void eliminar(@Parameter(description = &quot;Código único del probador&quot;) @PathVariable String codigo) {
+<span class="fc" id="L92">        probadorService.eliminar(codigo);</span>
+<span class="fc" id="L93">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

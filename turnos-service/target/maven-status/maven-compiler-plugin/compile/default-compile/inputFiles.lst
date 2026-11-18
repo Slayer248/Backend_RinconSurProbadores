@@ -1,0 +1,8 @@
+c:\Users\crist\Desktop\tienda_sonido\Backend_RinconSurProbadores\turnos-service\src\main\java\cl\duocuc\turnos\config\OpenApiConfig.java
+c:\Users\crist\Desktop\tienda_sonido\Backend_RinconSurProbadores\turnos-service\src\main\java\cl\duocuc\turnos\controller\TurnoController.java
+c:\Users\crist\Desktop\tienda_sonido\Backend_RinconSurProbadores\turnos-service\src\main\java\cl\duocuc\turnos\dto\CambiarEstadoTurnoRequest.java
+c:\Users\crist\Desktop\tienda_sonido\Backend_RinconSurProbadores\turnos-service\src\main\java\cl\duocuc\turnos\dto\CrearTurnoRequest.java
+c:\Users\crist\Desktop\tienda_sonido\Backend_RinconSurProbadores\turnos-service\src\main\java\cl\duocuc\turnos\model\Turno.java
+c:\Users\crist\Desktop\tienda_sonido\Backend_RinconSurProbadores\turnos-service\src\main\java\cl\duocuc\turnos\repository\TurnoRepository.java
+c:\Users\crist\Desktop\tienda_sonido\Backend_RinconSurProbadores\turnos-service\src\main\java\cl\duocuc\turnos\service\TurnoService.java
+c:\Users\crist\Desktop\tienda_sonido\Backend_RinconSurProbadores\turnos-service\src\main\java\cl\duocuc\turnos\TurnosServiceApplication.java

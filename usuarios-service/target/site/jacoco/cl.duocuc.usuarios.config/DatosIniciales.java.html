@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>DatosIniciales.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">usuarios-service</a> &gt; <a href="index.source.html" class="el_package">cl.duocuc.usuarios.config</a> &gt; <span class="el_source">DatosIniciales.java</span></div><h1>DatosIniciales.java</h1><pre class="source lang-java linenums">package cl.duocuc.usuarios.config;
+
+import cl.duocuc.usuarios.model.Usuario;
+import cl.duocuc.usuarios.repository.UsuarioRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.stereotype.Component;
+
+@Component
+@RequiredArgsConstructor
+public class DatosIniciales implements CommandLineRunner {
+
+    private final UsuarioRepository usuarioRepository;
+
+    @Override
+    public void run(String... args) {
+<span class="fc bfc" id="L18" title="All 2 branches covered.">        if (usuarioRepository.count() == 0) {</span>
+<span class="fc" id="L19">            BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();</span>
+<span class="fc" id="L20">            usuarioRepository.save(Usuario.builder()</span>
+<span class="fc" id="L21">                    .username(&quot;admin&quot;)</span>
+<span class="fc" id="L22">                    .nombre(&quot;Administrador Principal&quot;)</span>
+<span class="fc" id="L23">                    .correo(&quot;admin@rinconsur.cl&quot;)</span>
+<span class="fc" id="L24">                    .contrasena(encoder.encode(&quot;admin1234&quot;))</span>
+<span class="fc" id="L25">                    .rolId(1L)</span>
+<span class="fc" id="L26">                    .bloqueado(false)</span>
+<span class="fc" id="L27">                    .build());</span>
+        }
+<span class="fc" id="L29">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

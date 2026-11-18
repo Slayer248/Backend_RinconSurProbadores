@@ -1,0 +1,5 @@
+cl\duocuc\probadores\client\TurnoClientTest.class
+cl\duocuc\probadores\service\ProbadorServiceTest.class
+cl\duocuc\probadores\ProbadoresServiceApplicationTests.class
+cl\duocuc\probadores\config\DatosInicialesTest.class
+cl\duocuc\probadores\controller\ProbadorControllerTest.class

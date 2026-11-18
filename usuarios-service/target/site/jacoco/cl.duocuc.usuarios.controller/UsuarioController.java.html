@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>UsuarioController.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">usuarios-service</a> &gt; <a href="index.source.html" class="el_package">cl.duocuc.usuarios.controller</a> &gt; <span class="el_source">UsuarioController.java</span></div><h1>UsuarioController.java</h1><pre class="source lang-java linenums">package cl.duocuc.usuarios.controller;
+
+import cl.duocuc.usuarios.dto.*;
+import cl.duocuc.usuarios.service.UsuarioService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping(&quot;/api/usuarios&quot;)
+@RequiredArgsConstructor
+@Tag(name = &quot;Usuarios&quot;, description = &quot;Endpoints para autenticación, gestión CRUD, contraseñas y bloqueo de usuarios&quot;)
+public class UsuarioController {
+
+    private final UsuarioService usuarioService;
+
+    @Operation(summary = &quot;Iniciar sesión&quot;, description = &quot;Valida las credenciales del usuario y retorna sus datos de perfil.&quot;)
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = &quot;200&quot;, description = &quot;Autenticación exitosa&quot;),
+            @ApiResponse(responseCode = &quot;401&quot;, description = &quot;Credenciales inválidas&quot;),
+            @ApiResponse(responseCode = &quot;403&quot;, description = &quot;Usuario bloqueado&quot;)
+    })
+    @PostMapping(&quot;/login&quot;)
+    public UsuarioResponse login(@RequestBody LoginRequest datos) {
+<span class="fc" id="L32">        return usuarioService.login(datos);</span>
+    }
+
+    @Operation(summary = &quot;Listar usuarios&quot;, description = &quot;Obtiene todos los usuarios registrados, permitiendo filtrar opcionalmente por texto de búsqueda o ID de rol.&quot;)
+    @ApiResponse(responseCode = &quot;200&quot;, description = &quot;Listado de usuarios obtenido correctamente&quot;)
+    @GetMapping
+    public List&lt;UsuarioResponse&gt; listar(
+            @Parameter(description = &quot;Texto para filtrar por nombre, username o correo&quot;) @RequestParam(required = false) String buscar,
+            @Parameter(description = &quot;ID del rol para filtrar usuarios&quot;) @RequestParam(required = false) Long rolId
+    ) {
+<span class="fc" id="L42">        return usuarioService.listar(buscar, rolId);</span>
+    }
+
+    @Operation(summary = &quot;Obtener usuario por ID&quot;, description = &quot;Busca y retorna un usuario específico mediante su identificador numérico.&quot;)
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = &quot;200&quot;, description = &quot;Usuario encontrado&quot;),
+            @ApiResponse(responseCode = &quot;404&quot;, description = &quot;Usuario no encontrado&quot;)
+    })
+    @GetMapping(&quot;/{id}&quot;)
+    public UsuarioResponse obtenerPorId(@Parameter(description = &quot;ID del usuario&quot;) @PathVariable Long id) {
+<span class="fc" id="L52">        return usuarioService.obtenerPorId(id);</span>
+    }
+
+    @Operation(summary = &quot;Obtener usuario por username&quot;, description = &quot;Busca y retorna un usuario mediante su nombre de usuario único.&quot;)
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = &quot;200&quot;, description = &quot;Usuario encontrado&quot;),
+            @ApiResponse(responseCode = &quot;404&quot;, description = &quot;Usuario no encontrado&quot;)
+    })
+    @GetMapping(&quot;/username/{username}&quot;)
+    public UsuarioResponse obtenerPorUsername(@Parameter(description = &quot;Nombre de usuario&quot;) @PathVariable String username) {
+<span class="fc" id="L62">        return usuarioService.obtenerPorUsername(username);</span>
+    }
+
+    @Operation(summary = &quot;Registrar nuevo usuario&quot;, description = &quot;Crea un usuario en el sistema y envía sus credenciales iniciales por correo electrónico.&quot;)
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = &quot;201&quot;, description = &quot;Usuario creado exitosamente&quot;),
+            @ApiResponse(responseCode = &quot;400&quot;, description = &quot;Datos inválidos o usuario/correo ya existente&quot;),
+            @ApiResponse(responseCode = &quot;500&quot;, description = &quot;Error al enviar el correo de credenciales&quot;)
+    })
+    @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
+    public UsuarioResponse crear(@RequestBody RegistroUsuarioRequest datos) {
+<span class="fc" id="L74">        return usuarioService.crear(datos);</span>
+    }
+
+    @Operation(summary = &quot;Actualizar usuario&quot;, description = &quot;Modifica los datos de un usuario existente.&quot;)
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = &quot;200&quot;, description = &quot;Usuario actualizado exitosamente&quot;),
+            @ApiResponse(responseCode = &quot;404&quot;, description = &quot;Usuario no encontrado&quot;)
+    })
+    @PutMapping(&quot;/{id}&quot;)
+    public UsuarioResponse actualizar(
+            @Parameter(description = &quot;ID del usuario&quot;) @PathVariable Long id,
+            @RequestBody ActualizarUsuarioRequest datos
+    ) {
+<span class="fc" id="L87">        return usuarioService.actualizar(id, datos);</span>
+    }
+
+    @Operation(summary = &quot;Cambiar contraseña&quot;, description = &quot;Actualiza la contraseña del usuario validando su clave actual.&quot;)
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = &quot;204&quot;, description = &quot;Contraseña actualizada correctamente&quot;),
+            @ApiResponse(responseCode = &quot;400&quot;, description = &quot;La contraseña actual no coincide o la nueva es inválida&quot;),
+            @ApiResponse(responseCode = &quot;404&quot;, description = &quot;Usuario no encontrado&quot;)
+    })
+    @PutMapping(&quot;/{id}/contrasena&quot;)
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void cambiarContrasena(
+            @Parameter(description = &quot;ID del usuario&quot;) @PathVariable Long id,
+            @RequestBody CambiarContrasenaRequest datos
+    ) {
+<span class="fc" id="L102">        usuarioService.cambiarContrasena(id, datos);</span>
+<span class="fc" id="L103">    }</span>
+
+    @Operation(summary = &quot;Recuperar contraseña&quot;, description = &quot;Genera una clave temporal y la envía al correo asociado al username.&quot;)
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = &quot;200&quot;, description = &quot;Correo de recuperación enviado&quot;),
+            @ApiResponse(responseCode = &quot;404&quot;, description = &quot;Usuario no encontrado&quot;)
+    })
+    @PostMapping(&quot;/recuperar&quot;)
+    @ResponseStatus(HttpStatus.OK)
+    public void recuperarContrasena(@RequestBody RecuperarContrasenaRequest datos) {
+<span class="fc" id="L113">        usuarioService.recuperarContrasena(datos.username());</span>
+<span class="fc" id="L114">    }</span>
+
+    @Operation(summary = &quot;Bloquear o desbloquear usuario&quot;, description = &quot;Cambia el estado de bloqueo de una cuenta de usuario.&quot;)
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = &quot;200&quot;, description = &quot;Estado de bloqueo actualizado&quot;),
+            @ApiResponse(responseCode = &quot;400&quot;, description = &quot;Operación no permitida (ej. autobloqueo)&quot;),
+            @ApiResponse(responseCode = &quot;404&quot;, description = &quot;Usuario no encontrado&quot;)
+    })
+    @PatchMapping(&quot;/{id}/bloqueo&quot;)
+    public UsuarioResponse cambiarBloqueo(
+            @Parameter(description = &quot;ID del usuario&quot;) @PathVariable Long id,
+            @RequestBody BloqueoRequest datos,
+            @Parameter(description = &quot;ID del administrador que ejecuta la acción&quot;) @RequestHeader(value = &quot;X-Admin-Id&quot;, required = false) Long adminId
+    ) {
+<span class="fc" id="L128">        return usuarioService.cambiarBloqueo(id, datos.bloqueado(), adminId);</span>
+    }
+
+    @Operation(summary = &quot;Eliminar usuario&quot;, description = &quot;Elimina permanentemente un usuario del sistema.&quot;)
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = &quot;204&quot;, description = &quot;Usuario eliminado correctamente&quot;),
+            @ApiResponse(responseCode = &quot;400&quot;, description = &quot;No se puede eliminar al propio administrador&quot;),
+            @ApiResponse(responseCode = &quot;404&quot;, description = &quot;Usuario no encontrado&quot;)
+    })
+    @DeleteMapping(&quot;/{id}&quot;)
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void eliminar(
+            @Parameter(description = &quot;ID del usuario&quot;) @PathVariable Long id,
+            @Parameter(description = &quot;ID del administrador que ejecuta la acción&quot;) @RequestHeader(value = &quot;X-Admin-Id&quot;, required = false) Long adminId
+    ) {
+<span class="fc" id="L143">        usuarioService.eliminar(id, adminId);</span>
+<span class="fc" id="L144">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>
