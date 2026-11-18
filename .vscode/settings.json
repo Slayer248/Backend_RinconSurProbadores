@@ -1,0 +1,12 @@
+{
+    "java.debug.settings.onBuildFailureProceed": true,
+    "java.configuration.updateBuildConfiguration": "interactive",
+    "java.configuration.runtimes": [
+        {
+            "name": "JavaSE-21",
+            "path": "C:\\Users\\crist\\.jdks\\ms-21.0.12.1",
+            "default": true
+        }
+    ],
+    "java.compile.nullAnalysis.mode": "automatic"
+}

@@ -1,0 +1,45 @@
+server:
+  port: 8082
+  forward-headers-strategy: framework
+
+spring:
+  application:
+    name: usuarios-service
+  datasource:
+    url: jdbc:mysql://localhost:3306/rinconsur_usuarios?createDatabaseIfNotExist=true&serverTimezone=UTC
+    username: root
+    password: ""
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+  web:
+    error:
+      include-message: always
+  cloud:
+    compatibility-verifier:
+      enabled: false
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: soporte.rinconsur@gmail.com
+    password: bxdtrnykfxztvjnp
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+
+roles:
+  service:
+    url: http://localhost:8081
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+  instance:
+    prefer-ip-address: true
+    status-page-url-path: /swagger-ui.html
