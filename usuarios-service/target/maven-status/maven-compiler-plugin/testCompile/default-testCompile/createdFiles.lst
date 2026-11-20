@@ -1,7 +1,0 @@
-cl\duocuc\usuarios\util\PasswordGeneratorTest.class
-cl\duocuc\usuarios\controller\UsuarioControllerTest.class
-cl\duocuc\usuarios\config\DatosInicialesTest.class
-cl\duocuc\usuarios\UsuariosServiceApplicationTests.class
-cl\duocuc\usuarios\service\UsuarioServiceTest.class
-cl\duocuc\usuarios\client\RolClientTest.class
-cl\duocuc\usuarios\service\EmailServiceTest.class

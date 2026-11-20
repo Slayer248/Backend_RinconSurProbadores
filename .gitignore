@@ -1,0 +1,7 @@
+# Secretos locales
+.env
+*.env
+!.env.example
+
+# Salidas de compilación de Maven
+target/

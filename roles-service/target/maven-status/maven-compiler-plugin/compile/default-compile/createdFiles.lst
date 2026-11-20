@@ -1,7 +1,0 @@
-cl\duocuc\roles\service\RolService.class
-cl\duocuc\roles\model\Rol.class
-cl\duocuc\roles\controller\RolController.class
-cl\duocuc\roles\config\DatosIniciales.class
-cl\duocuc\roles\repository\RolRepository.class
-cl\duocuc\roles\model\Rol$RolBuilder.class
-cl\duocuc\roles\RolesServiceApplication.class

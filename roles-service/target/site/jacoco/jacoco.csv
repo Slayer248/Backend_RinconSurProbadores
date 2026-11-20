@@ -1,6 +1,0 @@
-GROUP,PACKAGE,CLASS,INSTRUCTION_MISSED,INSTRUCTION_COVERED,BRANCH_MISSED,BRANCH_COVERED,LINE_MISSED,LINE_COVERED,COMPLEXITY_MISSED,COMPLEXITY_COVERED,METHOD_MISSED,METHOD_COVERED
-roles-service,cl.duocuc.roles.controller,RolController,0,14,0,0,0,3,0,3,0,3
-roles-service,cl.duocuc.roles,RolesServiceApplication,8,0,0,0,3,0,2,0,2,0
-roles-service,cl.duocuc.roles.config,OpenApiConfig,0,17,0,0,0,6,0,2,0,2
-roles-service,cl.duocuc.roles.config,DatosIniciales,0,20,0,2,0,5,0,2,0,1
-roles-service,cl.duocuc.roles.service,RolService,0,57,0,6,0,9,0,7,0,4

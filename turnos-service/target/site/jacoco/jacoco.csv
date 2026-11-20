@@ -1,7 +1,0 @@
-GROUP,PACKAGE,CLASS,INSTRUCTION_MISSED,INSTRUCTION_COVERED,BRANCH_MISSED,BRANCH_COVERED,LINE_MISSED,LINE_COVERED,COMPLEXITY_MISSED,COMPLEXITY_COVERED,METHOD_MISSED,METHOD_COVERED
-turnos-service,cl.duocuc.turnos.service,TurnoService,0,158,0,20,0,29,0,17,0,7
-turnos-service,cl.duocuc.turnos.dto,CambiarEstadoTurnoRequest,0,6,0,0,0,1,0,1,0,1
-turnos-service,cl.duocuc.turnos.dto,CrearTurnoRequest,0,12,0,0,0,1,0,1,0,1
-turnos-service,cl.duocuc.turnos.controller,TurnoController,0,26,0,0,0,5,0,5,0,5
-turnos-service,cl.duocuc.turnos.config,OpenApiConfig,17,0,0,0,6,0,2,0,2,0
-turnos-service,cl.duocuc.turnos,TurnosServiceApplication,8,0,0,0,3,0,2,0,2,0
