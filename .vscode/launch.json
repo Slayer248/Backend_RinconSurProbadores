@@ -1,0 +1,65 @@
+{
+    // Para iniciar todo el backend: en "Ejecución y depuración" elige "Backend completo" y presiona ▶.
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "java",
+            "name": "EurekaServerApplication",
+            "request": "launch",
+            "mainClass": "cl.duoc.eureka_server.EurekaServerApplication",
+            "projectName": "eureka-server"
+        },
+        {
+            "type": "java",
+            "name": "RolesServiceApplication",
+            "request": "launch",
+            "mainClass": "cl.duocuc.roles.RolesServiceApplication",
+            "projectName": "roles-service"
+        },
+        {
+            "type": "java",
+            "name": "UsuariosServiceApplication",
+            "request": "launch",
+            "mainClass": "cl.duocuc.usuarios.UsuariosServiceApplication",
+            "projectName": "usuarios-service",
+            "cwd": "${workspaceFolder}/usuarios-service"
+        },
+        {
+            "type": "java",
+            "name": "ProbadoresServiceApplication",
+            "request": "launch",
+            "mainClass": "cl.duocuc.probadores.ProbadoresServiceApplication",
+            "projectName": "probadores-service"
+        },
+        {
+            "type": "java",
+            "name": "TurnosServiceApplication",
+            "request": "launch",
+            "mainClass": "cl.duocuc.turnos.TurnosServiceApplication",
+            "projectName": "turnos-service"
+        },
+        {
+            "type": "java",
+            "name": "GatewayApplication",
+            "request": "launch",
+            "mainClass": "duoc.cl.gateway.GatewayApplication",
+            "projectName": "gateway",
+            // 8080 lo usa Oracle en algunos equipos; cambia a 8080 si lo tienes libre
+            "args": "--server.port=8090"
+        }
+    ],
+    "compounds": [
+        {
+            "name": "Backend completo",
+            "configurations": [
+                "EurekaServerApplication",
+                "RolesServiceApplication",
+                "UsuariosServiceApplication",
+                "ProbadoresServiceApplication",
+                "TurnosServiceApplication",
+                "GatewayApplication"
+            ],
+            "stopAll": true
+        }
+    ]
+}
