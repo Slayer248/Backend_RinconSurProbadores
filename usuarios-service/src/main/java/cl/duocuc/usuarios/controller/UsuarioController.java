@@ -128,10 +128,10 @@ public class UsuarioController {
         return usuarioService.cambiarBloqueo(id, datos.bloqueado(), adminId);
     }
 
-    @Operation(summary = "Eliminar usuario", description = "Elimina permanentemente un usuario del sistema.")
+    @Operation(summary = "Inhabilitar usuario", description = "Inhabilita (bloquea) la cuenta sin borrar el registro de la base de datos.")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "204", description = "Usuario eliminado correctamente"),
-            @ApiResponse(responseCode = "400", description = "No se puede eliminar al propio administrador"),
+            @ApiResponse(responseCode = "204", description = "Usuario inhabilitado correctamente (el registro se conserva)"),
+            @ApiResponse(responseCode = "400", description = "No se puede inhabilitar al propio administrador"),
             @ApiResponse(responseCode = "404", description = "Usuario no encontrado")
     })
     @DeleteMapping("/{id}")

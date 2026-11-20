@@ -178,6 +178,8 @@ class UsuarioServiceTest {
         UsuarioResponse res = usuarioService.actualizar(2L,
                 new ActualizarUsuarioRequest("jperez2", "Juan Nuevo", "jn@b.cl", 2L, "NuevaPass123"));
         assertEquals("jperez2", res.username());
+        // La contraseña no cambia por esta vía
+        assertNull(normal.getContrasena());
 
         Usuario admin = Usuario.builder().id(1L).username("admin").nombre("Admin").correo("a@b.cl").rolId(1L).build();
         when(usuarioRepository.findById(1L)).thenReturn(Optional.of(admin));
@@ -249,6 +251,7 @@ class UsuarioServiceTest {
         assertThrows(ResponseStatusException.class, () -> usuarioService.eliminar(2L, 2L));
 
         usuarioService.eliminar(2L, 1L);
-        verify(usuarioRepository).delete(asistente);
+        assertTrue(asistente.getBloqueado());
+        verify(usuarioRepository, never()).delete(any(Usuario.class));
     }
 }

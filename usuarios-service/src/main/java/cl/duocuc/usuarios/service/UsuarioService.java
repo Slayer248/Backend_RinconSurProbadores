@@ -148,10 +148,8 @@ public class UsuarioService {
         existente.setCorreo(mailClean);
         existente.setRolId(rol.id());
 
-        if (datos.nuevaContrasena() != null && !datos.nuevaContrasena().isBlank()) {
-            validarContrasenaFuerte(datos.nuevaContrasena());
-            existente.setContrasena(passwordEncoder.encode(datos.nuevaContrasena().trim()));
-        }
+        // La contraseña no se modifica por esta vía: se ignora datos.nuevaContrasena().
+        // Solo se actualiza mediante PUT /api/usuarios/{id}/contrasena o la recuperación por correo.
 
         return UsuarioResponse.desde(usuarioRepository.save(existente), rol.nombre());
     }
@@ -229,13 +227,15 @@ public class UsuarioService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario no encontrado"));
 
         if ("admin".equalsIgnoreCase(usuario.getUsername())) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No se puede eliminar al administrador principal");
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No se puede inhabilitar al administrador principal");
         }
         if (adminId != null && adminId.equals(id)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No puedes eliminar tu propia cuenta");
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No puedes inhabilitar tu propia cuenta");
         }
 
-        usuarioRepository.delete(usuario);
+        // Baja lógica: la fila se conserva en la BD para mantener historial e integridad referencial.
+        usuario.setBloqueado(true);
+        usuarioRepository.save(usuario);
     }
 
     private void validarCamposBase(String username, String nombre, String correo, Long rolId) {

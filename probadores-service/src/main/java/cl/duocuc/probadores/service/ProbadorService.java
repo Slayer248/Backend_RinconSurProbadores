@@ -20,6 +20,8 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ProbadorService {
 
+    public static final String ESTADO_DESACTIVADO = "DESACTIVADO";
+
     private static final DateTimeFormatter HORA_FMT = DateTimeFormatter.ofPattern("HH:mm");
     private static final DateTimeFormatter FECHA_HORA_FMT = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm");
 
@@ -28,7 +30,10 @@ public class ProbadorService {
 
     public List<Probador> listar(String estado) {
         if (estado == null || estado.isBlank()) {
-            return probadorRepository.findAllByOrderByCodigoAsc();
+            // Los probadores desactivados se conservan en la BD pero no se listan por defecto
+            return probadorRepository.findAllByOrderByCodigoAsc().stream()
+                    .filter(p -> !ESTADO_DESACTIVADO.equalsIgnoreCase(p.getEstado()))
+                    .toList();
         }
         return probadorRepository.findByEstadoIgnoreCaseOrderByCodigoAsc(estado.trim());
     }
@@ -59,6 +64,9 @@ public class ProbadorService {
 
     public Probador cambiarEstado(String codigo, String nuevoEstado) {
         Probador probador = obtener(codigo);
+        if (ESTADO_DESACTIVADO.equalsIgnoreCase(probador.getEstado())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "El probador está desactivado");
+        }
         if ("FUERA_SERVICIO".equalsIgnoreCase(probador.getEstado())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "El probador está fuera de servicio");
         }
@@ -92,6 +100,9 @@ public class ProbadorService {
 
     public Probador cambiarBloqueo(String codigo, BloqueoProbadorRequest datos) {
         Probador probador = obtener(codigo);
+        if (ESTADO_DESACTIVADO.equalsIgnoreCase(probador.getEstado())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "El probador está desactivado");
+        }
         boolean bloquear = Boolean.TRUE.equals(datos.bloqueado());
 
         if (bloquear && "OCUPADO".equalsIgnoreCase(probador.getEstado())) {
@@ -115,8 +126,11 @@ public class ProbadorService {
     public void eliminar(String codigo) {
         Probador probador = obtener(codigo);
         if ("OCUPADO".equalsIgnoreCase(probador.getEstado())) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "No se puede eliminar " + probador.getCodigo() + " mientras está ocupado");
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "No se puede desactivar " + probador.getCodigo() + " mientras está ocupado");
         }
-        probadorRepository.delete(probador);
+        // Baja lógica: se conservan ultimoCliente, ultimoTurno y ultimoUso.
+        probador.setEstado(ESTADO_DESACTIVADO);
+        probador.setDesdeHora("-");
+        probadorRepository.save(probador);
     }
 }

@@ -238,13 +238,19 @@ class ProbadorServiceTest {
     }
 
     @Test
-    void eliminar_ProbadorLibre_EliminaCorrectamente() {
-        Probador p = Probador.builder().codigo("P-01").esAccesible(false).estado("LIBRE").build();
+    void eliminar_ProbadorLibre_LoDesactivaSinBorrarHistorial() {
+        Probador p = Probador.builder().codigo("P-01").esAccesible(false).estado("LIBRE")
+                .ultimoCliente("Ana").ultimoTurno("T-1001").ultimoUso("01-01-2026 10:00").build();
         when(probadorRepository.findById("P-01")).thenReturn(Optional.of(p));
 
         probadorService.eliminar("P-01");
 
-        verify(probadorRepository).delete(p);
+        assertEquals("DESACTIVADO", p.getEstado());
+        assertEquals("Ana", p.getUltimoCliente());
+        assertEquals("T-1001", p.getUltimoTurno());
+        assertEquals("01-01-2026 10:00", p.getUltimoUso());
+        verify(probadorRepository).save(p);
+        verify(probadorRepository, never()).delete(any());
     }
 
     @Test
@@ -257,5 +263,30 @@ class ProbadorServiceTest {
         );
         assertEquals(HttpStatus.CONFLICT, ex.getStatusCode());
         verify(probadorRepository, never()).delete(any());
+        verify(probadorRepository, never()).save(any());
+    }
+
+    @Test
+    void listar_SinFiltro_OcultaProbadoresDesactivados() {
+        when(probadorRepository.findAllByOrderByCodigoAsc()).thenReturn(List.of(
+                Probador.builder().codigo("P-01").esAccesible(false).estado("LIBRE").build(),
+                Probador.builder().codigo("P-02").esAccesible(false).estado("DESACTIVADO").build()
+        ));
+
+        List<Probador> resultado = probadorService.listar(null);
+
+        assertEquals(1, resultado.size());
+        assertEquals("P-01", resultado.get(0).getCodigo());
+    }
+
+    @Test
+    void cambiarEstado_ProbadorDesactivado_LanzaConflict() {
+        Probador p = Probador.builder().codigo("P-01").esAccesible(false).estado("DESACTIVADO").build();
+        when(probadorRepository.findById("P-01")).thenReturn(Optional.of(p));
+
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class, () ->
+                probadorService.cambiarEstado("P-01", "LIBRE")
+        );
+        assertEquals(HttpStatus.CONFLICT, ex.getStatusCode());
     }
 }

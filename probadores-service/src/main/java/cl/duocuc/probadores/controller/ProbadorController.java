@@ -81,9 +81,9 @@ public class ProbadorController {
         return probadorService.cambiarBloqueo(codigo, datos);
     }
 
-    @Operation(summary = "Eliminar probador", description = "Elimina permanentemente un probador del sistema.")
+    @Operation(summary = "Desactivar probador", description = "Desactiva el probador sin borrar el registro ni su historial de uso.")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "204", description = "Probador eliminado correctamente"),
+            @ApiResponse(responseCode = "204", description = "Probador desactivado correctamente (el registro se conserva)"),
             @ApiResponse(responseCode = "404", description = "Probador no encontrado")
     })
     @DeleteMapping("/{codigo}")
