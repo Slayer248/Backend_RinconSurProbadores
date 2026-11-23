@@ -40,6 +40,10 @@ roles:
   service:
     url: http://localhost:8081
 
+cuentas-inhabilitadas:
+  service:
+    url: http://localhost:8085
+
 eureka:
   client:
     service-url:

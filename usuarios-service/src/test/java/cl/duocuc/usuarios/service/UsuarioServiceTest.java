@@ -1,5 +1,6 @@
 package cl.duocuc.usuarios.service;
 
+import cl.duocuc.usuarios.client.CuentasInhabilitadasClient;
 import cl.duocuc.usuarios.client.RolClient;
 import cl.duocuc.usuarios.dto.*;
 import cl.duocuc.usuarios.model.Usuario;
@@ -32,6 +33,9 @@ class UsuarioServiceTest {
 
     @Mock
     private EmailService emailService;
+
+    @Mock
+    private CuentasInhabilitadasClient cuentasInhabilitadasClient;
 
     @InjectMocks
     private UsuarioService usuarioService;
@@ -251,7 +255,19 @@ class UsuarioServiceTest {
         assertThrows(ResponseStatusException.class, () -> usuarioService.eliminar(2L, 2L));
 
         usuarioService.eliminar(2L, 1L);
-        assertTrue(asistente.getBloqueado());
+        verify(cuentasInhabilitadasClient).archivar(any(ArchivarCuentaRequest.class));
+        verify(usuarioRepository).delete(asistente);
+    }
+
+    @Test
+    void eliminar_SiFallaElArchivoNoSeEliminaLaCuenta() {
+        Usuario asistente = Usuario.builder().id(2L).username("maria").rolId(2L).bloqueado(false).build();
+        when(usuarioRepository.findById(2L)).thenReturn(Optional.of(asistente));
+        when(rolClient.obtenerPorId(2L)).thenReturn(new RolDto(2L, "ASISTENTE"));
+        doThrow(new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "caído"))
+                .when(cuentasInhabilitadasClient).archivar(any(ArchivarCuentaRequest.class));
+
+        assertThrows(ResponseStatusException.class, () -> usuarioService.eliminar(2L, 1L));
         verify(usuarioRepository, never()).delete(any(Usuario.class));
     }
 }

@@ -1,11 +1,18 @@
 package cl.duocuc.probadores.service;
 
+import cl.duocuc.probadores.client.ProbadoresInhabilitadosClient;
 import cl.duocuc.probadores.client.TurnoClient;
+import cl.duocuc.probadores.dto.ArchivarProbadorRequest;
 import cl.duocuc.probadores.dto.BloqueoProbadorRequest;
 import cl.duocuc.probadores.dto.CrearProbadorRequest;
 import cl.duocuc.probadores.dto.TurnoAtendidoResponse;
+import cl.duocuc.probadores.dto.UsoProbadorDto;
 import cl.duocuc.probadores.model.Probador;
+import cl.duocuc.probadores.model.UsoProbador;
 import cl.duocuc.probadores.repository.ProbadorRepository;
+import cl.duocuc.probadores.repository.UsoProbadorRepository;
+import org.mockito.ArgumentCaptor;
+import java.time.LocalDateTime;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -29,6 +36,12 @@ class ProbadorServiceTest {
 
     @Mock
     private TurnoClient turnoClient;
+
+    @Mock
+    private UsoProbadorRepository usoProbadorRepository;
+
+    @Mock
+    private ProbadoresInhabilitadosClient probadoresInhabilitadosClient;
 
     @InjectMocks
     private ProbadorService probadorService;
@@ -126,6 +139,49 @@ class ProbadorServiceTest {
         assertEquals("T-1001", resultado.getUltimoTurno());
         assertNotNull(resultado.getUltimoUso());
         verify(turnoClient).atenderSiguiente();
+
+        // El nombre del invitado queda en el historial de usos
+        ArgumentCaptor<UsoProbador> uso = ArgumentCaptor.forClass(UsoProbador.class);
+        verify(usoProbadorRepository).save(uso.capture());
+        assertEquals("P-01", uso.getValue().getCodigoProbador());
+        assertEquals("Ana Morales", uso.getValue().getNombreCliente());
+        assertEquals("T-1001", uso.getValue().getNumeroTurno());
+        assertNotNull(uso.getValue().getInicio());
+        assertNull(uso.getValue().getFin());
+    }
+
+    @Test
+    void cambiarEstado_ALibre_CierraElUsoAbierto() {
+        Probador p = Probador.builder().codigo("P-01").esAccesible(false).estado("OCUPADO").desdeHora("14:30").build();
+        UsoProbador abierto = UsoProbador.builder().id(7L).codigoProbador("P-01").nombreCliente("Ana Morales")
+                .inicio(LocalDateTime.now().minusMinutes(10)).build();
+        when(probadorRepository.findById("P-01")).thenReturn(Optional.of(p));
+        when(probadorRepository.save(any(Probador.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(usoProbadorRepository.findFirstByCodigoProbadorAndFinIsNullOrderByInicioDesc("P-01"))
+                .thenReturn(Optional.of(abierto));
+
+        probadorService.cambiarEstado("P-01", "LIBRE");
+
+        assertNotNull(abierto.getFin());
+        verify(usoProbadorRepository).save(abierto);
+    }
+
+    @Test
+    void historial_RetornaLasPersonasQueUsaronElProbador() {
+        Probador p = Probador.builder().codigo("P-01").esAccesible(false).estado("LIBRE").build();
+        LocalDateTime t = LocalDateTime.of(2026, 11, 20, 10, 0);
+        when(probadorRepository.findById("P-01")).thenReturn(Optional.of(p));
+        when(usoProbadorRepository.findByCodigoProbadorOrderByInicioAsc("P-01")).thenReturn(List.of(
+                UsoProbador.builder().codigoProbador("P-01").numeroTurno("T-1").nombreCliente("Ana").inicio(t).fin(t.plusMinutes(8)).build(),
+                UsoProbador.builder().codigoProbador("P-01").numeroTurno("T-2").nombreCliente("Luis").inicio(t.plusHours(1)).build()
+        ));
+
+        List<UsoProbadorDto> historial = probadorService.historial("p-01");
+
+        assertEquals(2, historial.size());
+        assertEquals("Ana", historial.get(0).nombreCliente());
+        assertEquals("Luis", historial.get(1).nombreCliente());
+        assertNull(historial.get(1).fin());
     }
 
     @Test
@@ -238,18 +294,37 @@ class ProbadorServiceTest {
     }
 
     @Test
-    void eliminar_ProbadorLibre_LoDesactivaSinBorrarHistorial() {
+    void eliminar_ProbadorLibre_ArchivaConSusUsosYLoBorra() {
         Probador p = Probador.builder().codigo("P-01").esAccesible(false).estado("LIBRE")
                 .ultimoCliente("Ana").ultimoTurno("T-1001").ultimoUso("01-01-2026 10:00").build();
+        LocalDateTime t = LocalDateTime.of(2026, 1, 1, 10, 0);
         when(probadorRepository.findById("P-01")).thenReturn(Optional.of(p));
+        when(usoProbadorRepository.findByCodigoProbadorOrderByInicioAsc("P-01")).thenReturn(List.of(
+                UsoProbador.builder().codigoProbador("P-01").numeroTurno("T-1001").nombreCliente("Ana").inicio(t).fin(t.plusMinutes(5)).build()
+        ));
 
         probadorService.eliminar("P-01");
 
-        assertEquals("DESACTIVADO", p.getEstado());
-        assertEquals("Ana", p.getUltimoCliente());
-        assertEquals("T-1001", p.getUltimoTurno());
-        assertEquals("01-01-2026 10:00", p.getUltimoUso());
-        verify(probadorRepository).save(p);
+        ArgumentCaptor<ArchivarProbadorRequest> req = ArgumentCaptor.forClass(ArchivarProbadorRequest.class);
+        verify(probadoresInhabilitadosClient).archivar(req.capture());
+        assertEquals("P-01", req.getValue().codigo());
+        assertEquals("Ana", req.getValue().ultimoCliente());
+        assertEquals(1, req.getValue().usos().size());
+        assertEquals("Ana", req.getValue().usos().get(0).nombreCliente());
+        verify(usoProbadorRepository).deleteByCodigoProbador("P-01");
+        verify(probadorRepository).delete(p);
+    }
+
+    @Test
+    void eliminar_SiFallaElArchivoNoSeBorraNada() {
+        Probador p = Probador.builder().codigo("P-01").esAccesible(false).estado("LIBRE").build();
+        when(probadorRepository.findById("P-01")).thenReturn(Optional.of(p));
+        doThrow(new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "caído"))
+                .when(probadoresInhabilitadosClient).archivar(any(ArchivarProbadorRequest.class));
+
+        assertThrows(ResponseStatusException.class, () -> probadorService.eliminar("P-01"));
+
+        verify(usoProbadorRepository, never()).deleteByCodigoProbador(any());
         verify(probadorRepository, never()).delete(any());
     }
 

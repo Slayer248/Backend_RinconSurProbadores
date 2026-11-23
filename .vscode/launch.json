@@ -4,6 +4,27 @@
     "configurations": [
         {
             "type": "java",
+            "name": "ProbadoresInhabilitadosServiceApplication",
+            "request": "launch",
+            "mainClass": "cl.duocuc.probadoresinhabilitados.ProbadoresInhabilitadosServiceApplication",
+            "projectName": ""
+        },
+        {
+            "type": "java",
+            "name": "CuentasInhabilitadasServiceApplication",
+            "request": "launch",
+            "mainClass": "cl.duocuc.cuentasinhabilitadas.CuentasInhabilitadasServiceApplication",
+            "projectName": "cuentas-inhabilitadas-service"
+        },
+        {
+            "type": "java",
+            "name": "ProbadoresInhabilitadosServiceApplication",
+            "request": "launch",
+            "mainClass": "cl.duocuc.probadoresinhabilitados.ProbadoresInhabilitadosServiceApplication",
+            "projectName": "probadores-inhabilitados-service"
+        },
+        {
+            "type": "java",
             "name": "EurekaServerApplication",
             "request": "launch",
             "mainClass": "cl.duoc.eureka_server.EurekaServerApplication",
@@ -44,7 +65,6 @@
             "request": "launch",
             "mainClass": "duoc.cl.gateway.GatewayApplication",
             "projectName": "gateway",
-            // 8080 lo usa Oracle en algunos equipos; cambia a 8080 si lo tienes libre
             "args": "--server.port=8090"
         }
     ],
@@ -57,6 +77,8 @@
                 "UsuariosServiceApplication",
                 "ProbadoresServiceApplication",
                 "TurnosServiceApplication",
+                "CuentasInhabilitadasServiceApplication",
+                "ProbadoresInhabilitadosServiceApplication",
                 "GatewayApplication"
             ],
             "stopAll": true

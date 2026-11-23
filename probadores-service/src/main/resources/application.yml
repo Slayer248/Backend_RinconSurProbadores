@@ -24,6 +24,10 @@ turnos:
   service:
     url: http://localhost:8084
 
+probadores-inhabilitados:
+  service:
+    url: http://localhost:8086
+
 eureka:
   client:
     service-url:

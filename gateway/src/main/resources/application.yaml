@@ -38,6 +38,16 @@ spring:
           predicates:
             - Path=/api/turnos/**
 
+        - id: cuentas-inhabilitadas-ms
+          uri: lb://CUENTAS-INHABILITADAS-SERVICE
+          predicates:
+            - Path=/api/cuentas-inhabilitadas/**
+
+        - id: probadores-inhabilitados-ms
+          uri: lb://PROBADORES-INHABILITADOS-SERVICE
+          predicates:
+            - Path=/api/probadores-inhabilitados/**
+
         - id: roles-docs
           uri: lb://ROLES-SERVICE
           predicates:
@@ -66,6 +76,20 @@ spring:
           filters:
             - RewritePath=/docs/turnos/v3/api-docs(?<segment>/?.*), /v3/api-docs$\{segment}
 
+        - id: cuentas-inhabilitadas-docs
+          uri: lb://CUENTAS-INHABILITADAS-SERVICE
+          predicates:
+            - Path=/docs/cuentas-inhabilitadas/v3/api-docs/**
+          filters:
+            - RewritePath=/docs/cuentas-inhabilitadas/v3/api-docs(?<segment>/?.*), /v3/api-docs$\{segment}
+
+        - id: probadores-inhabilitados-docs
+          uri: lb://PROBADORES-INHABILITADOS-SERVICE
+          predicates:
+            - Path=/docs/probadores-inhabilitados/v3/api-docs/**
+          filters:
+            - RewritePath=/docs/probadores-inhabilitados/v3/api-docs(?<segment>/?.*), /v3/api-docs$\{segment}
+
 eureka:
   client:
     service-url:
@@ -85,6 +109,10 @@ springdoc:
         url: /docs/probadores/v3/api-docs
       - name: Turnos
         url: /docs/turnos/v3/api-docs
+      - name: Cuentas inhabilitadas
+        url: /docs/cuentas-inhabilitadas/v3/api-docs
+      - name: Probadores inhabilitados
+        url: /docs/probadores-inhabilitados/v3/api-docs
 
 management:
   endpoints:

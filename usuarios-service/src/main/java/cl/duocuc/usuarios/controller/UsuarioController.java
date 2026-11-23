@@ -128,9 +128,10 @@ public class UsuarioController {
         return usuarioService.cambiarBloqueo(id, datos.bloqueado(), adminId);
     }
 
-    @Operation(summary = "Inhabilitar usuario", description = "Inhabilita (bloquea) la cuenta sin borrar el registro de la base de datos.")
+    @Operation(summary = "Inhabilitar usuario", description = "Elimina la cuenta de usuarios y guarda una copia permanente en cuentas-inhabilitadas-service. No se puede reactivar.")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "204", description = "Usuario inhabilitado correctamente (el registro se conserva)"),
+            @ApiResponse(responseCode = "204", description = "Cuenta archivada y eliminada de usuarios"),
+            @ApiResponse(responseCode = "503", description = "El servicio de cuentas inhabilitadas no responde; no se eliminó nada"),
             @ApiResponse(responseCode = "400", description = "No se puede inhabilitar al propio administrador"),
             @ApiResponse(responseCode = "404", description = "Usuario no encontrado")
     })

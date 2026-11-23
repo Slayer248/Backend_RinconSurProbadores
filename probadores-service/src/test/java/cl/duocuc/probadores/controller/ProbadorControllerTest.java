@@ -74,4 +74,12 @@ class ProbadorControllerTest {
         probadorController.eliminar("P-01");
         verify(probadorService).eliminar("P-01");
     }
+
+    @Test
+    void historial_DelegaAlServicio() {
+        when(probadorService.historial("P-01")).thenReturn(java.util.List.of(
+                new cl.duocuc.probadores.dto.UsoProbadorDto("T-1", "Ana", java.time.LocalDateTime.now(), null)));
+
+        assertEquals("Ana", probadorController.historial("P-01").get(0).nombreCliente());
+    }
 }

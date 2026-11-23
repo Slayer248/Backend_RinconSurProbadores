@@ -1,14 +1,20 @@
 package cl.duocuc.probadores.service;
 
+import cl.duocuc.probadores.client.ProbadoresInhabilitadosClient;
 import cl.duocuc.probadores.client.TurnoClient;
+import cl.duocuc.probadores.dto.ArchivarProbadorRequest;
 import cl.duocuc.probadores.dto.BloqueoProbadorRequest;
 import cl.duocuc.probadores.dto.CrearProbadorRequest;
 import cl.duocuc.probadores.dto.TurnoAtendidoResponse;
+import cl.duocuc.probadores.dto.UsoProbadorDto;
 import cl.duocuc.probadores.model.Probador;
+import cl.duocuc.probadores.model.UsoProbador;
 import cl.duocuc.probadores.repository.ProbadorRepository;
+import cl.duocuc.probadores.repository.UsoProbadorRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
@@ -27,6 +33,8 @@ public class ProbadorService {
 
     private final ProbadorRepository probadorRepository;
     private final TurnoClient turnoClient;
+    private final UsoProbadorRepository usoProbadorRepository;
+    private final ProbadoresInhabilitadosClient probadoresInhabilitadosClient;
 
     public List<Probador> listar(String estado) {
         if (estado == null || estado.isBlank()) {
@@ -62,6 +70,7 @@ public class ProbadorService {
         return probadorRepository.save(nuevo);
     }
 
+    @Transactional
     public Probador cambiarEstado(String codigo, String nuevoEstado) {
         Probador probador = obtener(codigo);
         if (ESTADO_DESACTIVADO.equalsIgnoreCase(probador.getEstado())) {
@@ -86,12 +95,25 @@ public class ProbadorService {
                             HttpStatus.CONFLICT,
                             "No hay clientes en la fila de espera para ocupar el probador"
                     ));
-            probador.setDesdeHora(LocalTime.now().format(HORA_FMT));
+            LocalDateTime ahora = LocalDateTime.now();
+            probador.setDesdeHora(ahora.format(HORA_FMT));
             probador.setUltimoCliente(turno.nombreCliente());
             probador.setUltimoTurno(turno.numeroTurno());
-            probador.setUltimoUso(LocalDateTime.now().format(FECHA_HORA_FMT));
+            probador.setUltimoUso(ahora.format(FECHA_HORA_FMT));
+            // Historial: queda una fila por cada persona que usa el probador
+            usoProbadorRepository.save(UsoProbador.builder()
+                    .codigoProbador(probador.getCodigo())
+                    .numeroTurno(turno.numeroTurno())
+                    .nombreCliente(turno.nombreCliente())
+                    .inicio(ahora)
+                    .build());
         } else if ("LIBRE".equals(estadoUpper)) {
             probador.setDesdeHora("-");
+            usoProbadorRepository.findFirstByCodigoProbadorAndFinIsNullOrderByInicioDesc(probador.getCodigo())
+                    .ifPresent(uso -> {
+                        uso.setFin(LocalDateTime.now());
+                        usoProbadorRepository.save(uso);
+                    });
         }
 
         probador.setEstado(estadoUpper);
@@ -123,14 +145,39 @@ public class ProbadorService {
         return probadorRepository.save(probador);
     }
 
+    @Transactional
     public void eliminar(String codigo) {
         Probador probador = obtener(codigo);
         if ("OCUPADO".equalsIgnoreCase(probador.getEstado())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "No se puede desactivar " + probador.getCodigo() + " mientras está ocupado");
         }
-        // Baja lógica: se conservan ultimoCliente, ultimoTurno y ultimoUso.
-        probador.setEstado(ESTADO_DESACTIVADO);
-        probador.setDesdeHora("-");
-        probadorRepository.save(probador);
+
+        // Primero se archiva el probador con todas las personas que lo usaron; si falla, no se elimina nada.
+        List<UsoProbadorDto> usos = usoProbadorRepository.findByCodigoProbadorOrderByInicioAsc(probador.getCodigo())
+                .stream()
+                .map(u -> new UsoProbadorDto(u.getNumeroTurno(), u.getNombreCliente(), u.getInicio(), u.getFin()))
+                .toList();
+        probadoresInhabilitadosClient.archivar(new ArchivarProbadorRequest(
+                probador.getCodigo(),
+                probador.getEsAccesible(),
+                probador.getEstado(),
+                probador.getMotivoFueraServicio(),
+                probador.getUltimoCliente(),
+                probador.getUltimoTurno(),
+                probador.getUltimoUso(),
+                usos
+        ));
+
+        // Ya archivado, desaparece de probadores y de su historial de uso.
+        usoProbadorRepository.deleteByCodigoProbador(probador.getCodigo());
+        probadorRepository.delete(probador);
+    }
+
+    /** Todas las personas que han usado el probador, de la más antigua a la más reciente. */
+    public List<UsoProbadorDto> historial(String codigo) {
+        Probador probador = obtener(codigo);
+        return usoProbadorRepository.findByCodigoProbadorOrderByInicioAsc(probador.getCodigo()).stream()
+                .map(u -> new UsoProbadorDto(u.getNumeroTurno(), u.getNombreCliente(), u.getInicio(), u.getFin()))
+                .toList();
     }
 }

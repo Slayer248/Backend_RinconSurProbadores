@@ -3,6 +3,7 @@ package cl.duocuc.probadores.controller;
 import cl.duocuc.probadores.dto.BloqueoProbadorRequest;
 import cl.duocuc.probadores.dto.CambiarEstadoProbadorRequest;
 import cl.duocuc.probadores.dto.CrearProbadorRequest;
+import cl.duocuc.probadores.dto.UsoProbadorDto;
 import cl.duocuc.probadores.model.Probador;
 import cl.duocuc.probadores.service.ProbadorService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -81,9 +82,21 @@ public class ProbadorController {
         return probadorService.cambiarBloqueo(codigo, datos);
     }
 
-    @Operation(summary = "Desactivar probador", description = "Desactiva el probador sin borrar el registro ni su historial de uso.")
+    @Operation(summary = "Historial de uso del probador", description = "Lista las personas (nombre del invitado y turno) que han usado el probador, con hora de inicio y fin.")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "204", description = "Probador desactivado correctamente (el registro se conserva)"),
+            @ApiResponse(responseCode = "200", description = "Historial obtenido correctamente"),
+            @ApiResponse(responseCode = "404", description = "Probador no encontrado")
+    })
+    @GetMapping("/{codigo}/historial")
+    public List<UsoProbadorDto> historial(@Parameter(description = "Código único del probador") @PathVariable String codigo) {
+        return probadorService.historial(codigo);
+    }
+
+    @Operation(summary = "Eliminar probador", description = "Elimina el probador de probadores y guarda una copia permanente, con todas las personas que lo usaron, en probadores-inhabilitados-service.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "204", description = "Probador archivado y eliminado"),
+            @ApiResponse(responseCode = "409", description = "El probador está ocupado"),
+            @ApiResponse(responseCode = "503", description = "El servicio de probadores inhabilitados no responde; no se eliminó nada"),
             @ApiResponse(responseCode = "404", description = "Probador no encontrado")
     })
     @DeleteMapping("/{codigo}")

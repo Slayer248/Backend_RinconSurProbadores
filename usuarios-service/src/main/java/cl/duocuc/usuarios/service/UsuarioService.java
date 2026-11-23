@@ -1,5 +1,6 @@
 package cl.duocuc.usuarios.service;
 
+import cl.duocuc.usuarios.client.CuentasInhabilitadasClient;
 import cl.duocuc.usuarios.client.RolClient;
 import cl.duocuc.usuarios.dto.*;
 import cl.duocuc.usuarios.model.Usuario;
@@ -23,6 +24,7 @@ public class UsuarioService {
 
     private final UsuarioRepository usuarioRepository;
     private final RolClient rolClient;
+    private final CuentasInhabilitadasClient cuentasInhabilitadasClient;
     private final EmailService emailService;
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
@@ -233,9 +235,22 @@ public class UsuarioService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No puedes inhabilitar tu propia cuenta");
         }
 
-        // Baja lógica: la fila se conserva en la BD para mantener historial e integridad referencial.
-        usuario.setBloqueado(true);
-        usuarioRepository.save(usuario);
+        // Primero se archiva la copia; si falla, no se elimina nada y la cuenta sigue intacta.
+        RolDto rol = rolClient.obtenerPorId(usuario.getRolId());
+        cuentasInhabilitadasClient.archivar(new ArchivarCuentaRequest(
+                usuario.getId(),
+                usuario.getUsername(),
+                usuario.getNombre(),
+                usuario.getCorreo(),
+                usuario.getContrasena(),
+                usuario.getRolId(),
+                rol.nombre(),
+                usuario.getBloqueado(),
+                adminId
+        ));
+
+        // Ya archivada, desaparece de usuarios: no aparece en listados ni puede reactivarse.
+        usuarioRepository.delete(usuario);
     }
 
     private void validarCamposBase(String username, String nombre, String correo, Long rolId) {
